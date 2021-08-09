@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from database import Database
-from skyblockl_api import SkyblockApi
+from skyblock_api import SkyblockApi
 
 
 def epoch_to_human_time(epoch: int):
