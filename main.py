@@ -1,5 +1,12 @@
+
+from skyblockl_api import SkyblockApi
+
+
 def main():
-  print("hello world")
+  SkyblockApi.init()
+
+  for prices in SkyblockApi.get_new_bazaar_prices():
+    print(prices['lastUpdated'])
 
 
 if __name__ == "__main__":
