@@ -25,28 +25,11 @@ class SkyblockApi:
     return SkyblockApi._get('/skyblock/bazaar')
 
   @staticmethod
-  def get_bazaar_prices():
-    bazaar = SkyblockApi.get_bazaar()
-    if(not bazaar):
-      return None
-    bazaar_prices = dict()
-    bazaar_prices['lastUpdated'] = bazaar['lastUpdated']
-    product_prices = dict()
-    for product in bazaar['products'].values():
-      quick_status = product['quick_status']
-      product_price = dict()
-      product_price['sell'] = quick_status['sellPrice']
-      product_price['buy'] = quick_status['buyPrice']
-      product_prices[quick_status['productId']] = product_price
-    bazaar_prices['products'] = product_prices
-    return bazaar_prices
-
-  @staticmethod
-  def get_new_bazaar_prices():
+  def get_new_bazaar():
     last_time = 0
     while True:
-      prices = SkyblockApi.get_bazaar_prices()
-      if(prices and prices['lastUpdated'] > last_time):
-        last_time = prices['lastUpdated']
-        yield prices
+      bazaar = SkyblockApi.get_bazaar()
+      if(bazaar and bazaar['lastUpdated'] > last_time):
+        last_time = bazaar['lastUpdated']
+        yield bazaar
       sleep(5)
