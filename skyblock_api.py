@@ -8,7 +8,7 @@ class SkyblockApi:
 
   @staticmethod
   def init():
-    with open('api_key.txt') as file:
+    with open('data/api_key.txt') as file:
       SkyblockApi.key = file.readline()
 
   @staticmethod

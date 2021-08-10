@@ -1,3 +1,4 @@
+import json
 import sqlite3 as sl
 
 
@@ -6,8 +7,8 @@ class Database:
   @staticmethod
   def init():
     Database.connection = sl.connect('data/hypixel-skyblock.db')
-    with open('data/item-ids.txt') as file:
-      Database.item_ids = [id.strip() for id in file.readlines()]
+    with open('data/bazaar_items.json') as file:
+      Database.item_ids = json.loads(file.readline())
 
   @staticmethod
   def setup():
