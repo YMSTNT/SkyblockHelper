@@ -1,4 +1,5 @@
 
+import sys
 from datetime import datetime
 
 from database import Database
@@ -10,11 +11,17 @@ def epoch_to_human_time(epoch: int):
 
 
 def main():
+  print("done")
+  return
 
+
+def init():
   SkyblockApi.init()
   Database.init()
   # Database.setup(item_ids)
 
+
+def save_bazaar():
   for bazaar in SkyblockApi.get_new_bazaar():
     Database.insert_bazaar(bazaar)
     bazaar_time = epoch_to_human_time(bazaar['lastUpdated'])
@@ -22,4 +29,8 @@ def main():
 
 
 if __name__ == "__main__":
-  main()
+  init()
+  if len(sys.argv) == 1:
+    main()
+  elif sys.argv[1] == "save_bazaar":
+    save_bazaar()
