@@ -27,7 +27,7 @@ class Database:
   @staticmethod
   def execute(sql: str):
     with Database.connection:
-      Database.connection.execute(sql.replace(':', '__'))
+      return Database.connection.execute(sql.replace(':', '__'))
 
   @staticmethod
   def insert_bazaar(bazaar: dict):
@@ -44,3 +44,19 @@ class Database:
         f'INSERT INTO BazaarBuy(time, {item_ids_sql}) VALUES({bazaar["lastUpdated"]}, {buy_values_sql})')
     Database.execute(
         f'INSERT INTO BazaarSell(time, {item_ids_sql}) VALUES({bazaar["lastUpdated"]}, {sell_values_sql})')
+
+  @staticmethod
+  def get_bazaar_prices_for_product(product: str):
+    result = {
+        'buy': {'times': [], 'prices': []},
+        'sell': {'times': [], 'prices': []}
+    }
+    buy_data = Database.execute(f'SELECT time, {product} FROM BazaarBuy')
+    sell_data = Database.execute(f'SELECT time, {product} FROM BazaarSell')
+    for row in buy_data:
+      result['buy']['times'].append(row[0])
+      result['buy']['prices'].append(row[1])
+    for row in sell_data:
+      result['sell']['times'].append(row[0])
+      result['sell']['prices'].append(row[1])
+    return result
