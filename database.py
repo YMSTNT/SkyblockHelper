@@ -1,6 +1,8 @@
 import json
 import sqlite3 as sl
 
+from nbt_decoder import NbtDecoder
+
 
 class Database:
 
@@ -14,8 +16,7 @@ class Database:
   def setup():
     item_ids_sql = [f'{id} REAL' for id in Database.item_ids]
     item_ids_sql = ','.join(item_ids_sql)
-    tables = ["BazaarBuy", 'BazaarSell']
-    for table in tables:
+    for table in ["BazaarBuy", 'BazaarSell']:
       Database.execute(f"""
         CREATE TABLE {table} (
           id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -24,19 +25,41 @@ class Database:
         );
       """)
 
+    Database.execute(f"""
+      CREATE TABLE EndedAuctions (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        time INTEGER,
+        name TEXT,
+        price INTEGER,
+        bin INTEGER,
+        nbt BLOB
+      );
+    """)
+
   @staticmethod
   def execute(sql: str):
     with Database.connection:
       return Database.connection.execute(sql.replace(':', '__'))
 
   @staticmethod
+  def executemany(sql: str, data):
+    with Database.connection:
+      return Database.connection.executemany(sql.replace(':', '__'), data)
+
+  @staticmethod
   def insert_bazaar(bazaar: dict):
     buy_values = []
     sell_values = []
     for id in Database.item_ids:
-      product = bazaar['products'][id]['quick_status']
-      buy_values.append(str(product['buyPrice']))
-      sell_values.append(str(product['sellPrice']))
+      product = bazaar['products'][id]
+      if product['buy_summary']:
+        buy_values.append(str(product['buy_summary'][0]['pricePerUnit']))
+      else:
+        buy_values.append(str(-1))
+      if product['sell_summary']:
+        sell_values.append(str(product['sell_summary'][0]['pricePerUnit']))
+      else:
+        sell_values.append(str(-1))
     item_ids_sql = ",".join(Database.item_ids)
     buy_values_sql = ','.join(buy_values)
     sell_values_sql = ','.join(sell_values)
@@ -60,3 +83,13 @@ class Database:
       result['sell']['times'].append(row[0])
       result['sell']['prices'].append(row[1])
     return result
+
+  @staticmethod
+  def insert_auctions(auctions):
+    items = []
+    for auction in auctions['auctions']:
+      item_name = NbtDecoder.get_item_id_from_bytes(auction['item_bytes'])
+      items.append((auction['timestamp'], item_name,
+                   auction['price'], auction['bin'], auction['item_bytes']))
+    Database.executemany(
+        'INSERT INTO EndedAuctions(time, name, price, bin, nbt) VALUES(?, ?, ?, ?, ?)', items)
