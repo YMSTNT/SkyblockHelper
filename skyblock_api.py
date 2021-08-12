@@ -31,9 +31,9 @@ class SkyblockApi:
       sleep(delay)
 
   @staticmethod
-  def get_new_bazaar():
-    return SkyblockApi._get_new('bazaar', 5)
+  def get_new_bazaar(delay: int):
+    return SkyblockApi._get_new('bazaar', delay)
 
   @staticmethod
-  def get_new_ended_auctions():
-    return SkyblockApi._get_new('auctions_ended', 30)
+  def get_new_ended_auctions(delay: int):
+    return SkyblockApi._get_new('auctions_ended', delay)
