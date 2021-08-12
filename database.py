@@ -11,10 +11,10 @@ class Database:
     Database.connection = sl.connect('data/hypixel-skyblock.db')
     with open('data/bazaar_items.json') as file:
       Database.item_ids = json.loads(file.readline())
-      Database.bazaar_tables = [
-          'BazaarBuyPrice', 'BazaarBuyVolume', 'BazaarBuyMovingWeek', 'BazaarBuyOrders',
-          'BazaarSellPrice', 'BazaarSellVolume', 'BazaarSellMovingWeek', 'BazaarSellOrders'
-      ]
+    Database.bazaar_tables = [
+        'BazaarBuyPrice', 'BazaarBuyVolume', 'BazaarBuyMovingWeek', 'BazaarBuyOrders',
+        'BazaarSellPrice', 'BazaarSellVolume', 'BazaarSellMovingWeek', 'BazaarSellOrders'
+    ]
 
   @staticmethod
   def setup():
@@ -34,7 +34,9 @@ class Database:
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         time INTEGER,
         name TEXT,
-        price INTEGER,
+        count INTEGER,
+        price REAL,
+        unit_price REAL,
         bin INTEGER,
         nbt BLOB
       );
@@ -102,8 +104,9 @@ class Database:
   def insert_auctions(auctions):
     items = []
     for auction in auctions['auctions']:
-      item_name = NbtDecoder.get_item_id_from_bytes(auction['item_bytes'])
-      items.append((auction['timestamp'], item_name,
-                   auction['price'], auction['bin'], auction['item_bytes']))
+      nbt_data = NbtDecoder.get_item_data_from_bytes(auction['item_bytes'])
+      price_per_unit = auction['price'] / nbt_data['count']
+      items.append((auction['timestamp'], nbt_data['name'], nbt_data['count'],
+                    auction['price'], price_per_unit, auction['bin'], auction['item_bytes']))
     Database.executemany(
-        'INSERT INTO EndedAuctions(time, name, price, bin, nbt) VALUES(?, ?, ?, ?, ?)', items)
+        'INSERT INTO EndedAuctions(time, name, count, price, unit_price, bin, nbt) VALUES(?, ?, ?, ?, ?, ?, ?)', items)
