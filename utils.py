@@ -5,6 +5,7 @@ from time import time
 class Utils:
 
   quitting = False
+  paused = False
 
   @staticmethod
   def epoch_to_human_time(epoch: int):

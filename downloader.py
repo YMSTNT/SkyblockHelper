@@ -34,6 +34,12 @@ class Downloader:
       if inp == 'q':
         Utils.quitting = True
         Utils.log('Quitting')
+      elif inp == 'p':
+        Utils.paused = not Utils.paused
+        if Utils.paused:
+          Utils.log('Paused database access')
+        else:
+          Utils.log('Resumed database access')
 
   @staticmethod
   def _quit():
@@ -50,8 +56,10 @@ class Downloader:
     auctions_data = []
     auction_future = executor.submit(SkyblockApi.get_new_ended_auctions, auctions_data)
     executor.submit(Downloader._catch_input)
-    while not Utils.quitting or bazaar_data or auctions_data or not bazaar_future.done() or not auction_future.done():
-      Downloader._put_data_to_db(bazaar_data, Database.insert_bazaar)
-      Downloader._put_data_to_db(auctions_data, Database.insert_auctions)
+    should_quit = Utils.quitting and not bazaar_data and not auctions_data and bazaar_future.done() and auction_future.done()
+    while not should_quit:
+      if not Utils.paused:
+        Downloader._put_data_to_db(bazaar_data, Database.insert_bazaar)
+        Downloader._put_data_to_db(auctions_data, Database.insert_auctions)
       sleep(0.1)
     Downloader._quit()
