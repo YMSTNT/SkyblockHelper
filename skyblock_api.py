@@ -16,11 +16,16 @@ class SkyblockApi:
   @staticmethod
   def _get(uri: str):
     base_uri = f'https://api.hypixel.net/skyblock/{uri}?key={SkyblockApi.key}'
-    response = requests.get(f'{base_uri}/{uri}')
-    if(response.status_code != 200):
-      Utils.log("API failed: " + response.text)
+    try:
+      response = requests.get(f'{base_uri}/{uri}')
+      if response.status_code != 200:
+        Utils.log("API failed: " + response.text)
+        return None
+      return json.loads(response.text)
+    except ConnectionError:
       return None
-    return json.loads(response.text)
+    except:
+      Utils.log('GET REQUEST FAILED')
 
   @staticmethod
   def _get_new(uri: str, buffer: list, delay: int, log_type: str):

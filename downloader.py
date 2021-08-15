@@ -56,8 +56,9 @@ class Downloader:
     auctions_data = []
     auction_future = executor.submit(SkyblockApi.get_new_ended_auctions, auctions_data)
     executor.submit(Downloader._catch_input)
-    should_quit = Utils.quitting and not bazaar_data and not auctions_data and bazaar_future.done() and auction_future.done()
+    should_quit = False
     while not should_quit:
+      should_quit = Utils.quitting and not bazaar_data and not auctions_data and bazaar_future.done() and auction_future.done()
       if not Utils.paused:
         Downloader._put_data_to_db(bazaar_data, Database.insert_bazaar)
         Downloader._put_data_to_db(auctions_data, Database.insert_auctions)
