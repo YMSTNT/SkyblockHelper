@@ -24,6 +24,8 @@ class Downloader:
       except Exception as e:
         Utils.log(f'[{data["type"]}] FAILED TO PUT DATA TO DATABASE')
         Utils.log(e)
+        Utils.log(data)
+        datas.pop()
     if len(datas) > 1:
       Utils.log(f'[{data["type"]}] {len(datas)} datas are waiting in queue')
 
