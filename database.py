@@ -1,6 +1,11 @@
 import json
 import sqlite3 as sl
+from time import time
 
+import numpy
+from scipy import stats
+
+from data_utils import DataUtils
 from nbt_decoder import NbtDecoder
 
 
@@ -88,16 +93,15 @@ class Database:
       Database.execute(f'INSERT INTO {table_name}(time, {item_ids_sql}) VALUES({bazaar["lastUpdated"]}, {values_sql})')
 
   @staticmethod
-  def get_bazaar_for_product(product: str):
+  def get_product_from_bazaar(product: str, complex=False):
     data = {}
-    for table in Database.bazaar_tables:
-      times = []
-      values = []
+    tables = Database.bazaar_tables if complex else ['BazaarBuyPrice', 'BazaarSellPrice']
+    for table in tables:
       query = Database.execute(f'SELECT time, {product} FROM {table}')
+      data[table] = {'times': [], 'values': []}
       for row in query:
-        times.append(row[0])
-        values.append(row[1])
-      data[table] = {'times': times, 'values': values}
+        data[table]['times'].append(row[0])
+        data[table]['values'].append(row[1])
     return data
 
   @staticmethod
@@ -110,3 +114,91 @@ class Database:
                     auction['price'], price_per_unit, auction['bin'], auction['item_bytes']))
     Database.executemany(
         'INSERT INTO EndedAuctions(time, name, count, price, unit_price, bin, nbt) VALUES(?, ?, ?, ?, ?, ?, ?)', items)
+
+  @staticmethod
+  def get_product_from_auctions(product: str, complex=False):
+    if not complex:
+      data = {'times': [], 'values': []}
+    else:
+      data = {
+          'AuctionPrice': {
+              '1 hour': {'times': [], 'values': []},
+              '6 hours': {'times': [], 'values': []},
+              '1 day': {'times': [], 'values': []},
+          },
+          'AuctionVolume': {'times': [], 'values': []},
+          'AuctionMovingCoins': {'times': [], 'values': []},
+          'AuctionOrders': {'times': [], 'values': []},
+      }
+    query = Database.execute(f'SELECT time, price, count, bin FROM EndedAuctions WHERE name = "{product}"')
+    query = [{'time': r[0], 'price': r[1], 'count': r[2], 'bin': r[3]} for r in query]
+    for row in query:
+      row['unit_price'] = row['price'] / row['count']
+    average_price = DataUtils.get_average_price(query, DataUtils.DAY * 3)
+    # filter out unusual prices
+    filtered = list(filter(lambda r:
+                           r['unit_price'] < average_price * 2 and
+                           r['unit_price'] > average_price / 2,
+                           query))
+    # filter to only bin and stack count 1 items
+    clean_prices = list(filter(lambda r: r['count'] == 1 and r['bin'] == 1, filtered))
+
+    if not complex:
+      smoothened = DataUtils.smooth_data(clean_prices, DataUtils.DAY)
+      for row in smoothened:
+        data['times'].append(row['time'])
+        data['values'].append(row['price'])
+      return data
+    else:
+      smootheneds = {
+          '1 hour': DataUtils.smooth_data(clean_prices, DataUtils.HOUR),
+          '6 hours': DataUtils.smooth_data(clean_prices, DataUtils.HOUR * 6),
+          '1 day': DataUtils.smooth_data(clean_prices, DataUtils.DAY),
+      }
+
+      # max 8 days old data
+      eight_days_ago = int(time() * 1000) - DataUtils.DAY * 8
+      filtered = list(filter(lambda r: r['time'] > eight_days_ago, filtered))
+
+      filtered2 = filtered.copy()
+      filtered2.reverse()
+      moving_coins = []
+      volume = []
+      orders = []
+      i = 0
+      now = int(time() * 1000)
+      for time_start in range(now, now - DataUtils.DAY * 7, -DataUtils.HOUR):
+        sum_prices = []
+        sum_volume = []
+        sum_orders = 0
+        j = i
+        while j < len(filtered2) and filtered2[j]['time'] > time_start - DataUtils.DAY:
+          if filtered2[j]['time'] > time_start - DataUtils.HOUR:
+            i = j
+          sum_prices.append(filtered2[j]['price'])
+          sum_volume.append(filtered2[j]['count'])
+          sum_orders += 1
+          j += 1
+        sum_prices = sum(sum_prices)
+        sum_volume = sum(sum_volume)
+        moving_coins.append({'time': time_start, 'value': sum_prices})
+        volume.append({'time': time_start, 'value': sum_volume})
+        orders.append({'time': time_start, 'value': sum_orders})
+      moving_coins.reverse()
+      volume.reverse()
+      orders.reverse()
+
+      for smoothened_time, smoothened in smootheneds.items():
+        for row in smoothened:
+          data['AuctionPrice'][smoothened_time]['times'].append(row['time'])
+          data['AuctionPrice'][smoothened_time]['values'].append(row['price'])
+      for row in moving_coins:
+        data['AuctionMovingCoins']['times'].append(row['time'])
+        data['AuctionMovingCoins']['values'].append(row['value'])
+      for row in volume:
+        data['AuctionVolume']['times'].append(row['time'])
+        data['AuctionVolume']['values'].append(row['value'])
+      for row in orders:
+        data['AuctionOrders']['times'].append(row['time'])
+        data['AuctionOrders']['values'].append(row['value'])
+      return data

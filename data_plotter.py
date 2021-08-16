@@ -39,7 +39,7 @@ class DataPlotter:
   @staticmethod
   def show_bazaar(product_id: str, complex=False):
     product_id = product_id.upper().replace(' ', '_')
-    product_data = Database.get_bazaar_for_product(product_id)
+    product_data = Database.get_product_from_bazaar(product_id, complex)
     fig = plt.figure()
     fig.suptitle(product_id, fontsize=24)
     if complex:
@@ -58,6 +58,7 @@ class DataPlotter:
     ax_price.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
     ax_price.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
     fig.add_subplot(ax_price)
+    plt.grid()
 
     if complex:
       ax_volume = plt.subplot(gs[0, 1])
@@ -71,6 +72,7 @@ class DataPlotter:
       ax_volume.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
       ax_volume.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
       fig.add_subplot(ax_volume)
+      plt.grid()
 
       ax_moving = plt.subplot(gs[1, 0])
       ax_moving.plot(product_data['BazaarBuyMovingWeek']['times'],
@@ -83,6 +85,7 @@ class DataPlotter:
       ax_moving.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
       ax_moving.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
       fig.add_subplot(ax_moving)
+      plt.grid()
 
       ax_orders = plt.subplot(gs[1, 1])
       ax_orders.plot(product_data['BazaarBuyOrders']['times'],
@@ -95,6 +98,72 @@ class DataPlotter:
       ax_orders.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
       ax_orders.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
       fig.add_subplot(ax_orders)
+      plt.grid()
 
-    plt.grid()
+    plt.show()
+
+  @staticmethod
+  def show_auctions(product_id: str, complex=False):
+    product_id = product_id.upper().replace(' ', '_')
+    product_data = Database.get_product_from_auctions(product_id, complex)
+    fig = plt.figure()
+    fig.suptitle(product_id, fontsize=24)
+    if not complex:
+      gs = gridspec.GridSpec(1, 1)
+      ax_price = plt.subplot(gs[0, 0])
+      ax_price.plot(product_data['times'], product_data['values'], 'r')
+      ax_price.set_ylabel('Price', fontsize=18)
+      ax_price.set_xlabel('Time ago', fontsize=18)
+      ax_price.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
+      ax_price.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
+      fig.add_subplot(ax_price)
+      plt.grid()
+    else:
+      gs = gridspec.GridSpec(2, 2)
+
+      ax_price = plt.subplot(gs[0, 0])
+      ax_price.plot(product_data['AuctionPrice']['1 hour']['times'],
+                    product_data['AuctionPrice']['1 hour']['values'],
+                    'r', linewidth=1, label='1 hour')
+      ax_price.plot(product_data['AuctionPrice']['6 hours']['times'],
+                    product_data['AuctionPrice']['6 hours']['values'],
+                    'g', linewidth=2, label='6 hours')
+      ax_price.plot(product_data['AuctionPrice']['1 day']['times'],
+                    product_data['AuctionPrice']['1 day']['values'],
+                    'b', linewidth=3, label='1 day')
+      ax_price.legend()
+      ax_price.set_ylabel('Price', fontsize=18)
+      ax_price.set_xlabel('Time ago', fontsize=18)
+      ax_price.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
+      ax_price.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
+      fig.add_subplot(ax_price)
+      plt.grid()
+
+      ax_moving = plt.subplot(gs[1, 0])
+      ax_moving.plot(product_data['AuctionMovingCoins']['times'], product_data['AuctionMovingCoins']['values'], 'r')
+      ax_moving.set_ylabel('Daily Moving Coins', fontsize=18)
+      ax_moving.set_xlabel('Time ago', fontsize=18)
+      ax_moving.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
+      ax_moving.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
+      fig.add_subplot(ax_moving)
+      plt.grid()
+
+      ax_volume = plt.subplot(gs[0, 1])
+      ax_volume.plot(product_data['AuctionVolume']['times'], product_data['AuctionVolume']['values'], 'r')
+      ax_volume.set_ylabel('Daily Items Sold', fontsize=18)
+      ax_volume.set_xlabel('Time ago', fontsize=18)
+      ax_volume.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
+      ax_volume.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
+      fig.add_subplot(ax_volume)
+      plt.grid()
+
+      ax_orders = plt.subplot(gs[1, 1])
+      ax_orders.plot(product_data['AuctionOrders']['times'], product_data['AuctionOrders']['values'], 'r')
+      ax_orders.set_ylabel('Daily Auctions Filled', fontsize=18)
+      ax_orders.set_xlabel('Time ago', fontsize=18)
+      ax_orders.yaxis.set_major_formatter(FuncFormatter(DataPlotter._format_coins))
+      ax_orders.xaxis.set_major_formatter(FuncFormatter(DataPlotter._format_date))
+      fig.add_subplot(ax_orders)
+      plt.grid()
+
     plt.show()
