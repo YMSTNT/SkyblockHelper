@@ -2,6 +2,7 @@
 
 pip install -r requirements.txt
 cd data
+mkdir logs
 echo 'Enter your Hypixel API key:'
 read api_key
 echo $api_key > api_key.txt
