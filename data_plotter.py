@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 from database import Database
+from name_resolver import NameResolver
 
 
 class DataPlotter:
@@ -37,11 +38,10 @@ class DataPlotter:
       return f'{round(sec / 60 / 60 / 24 / 30 / 12, 1)}y'
 
   @staticmethod
-  def show_bazaar(product_id: str, complex=False):
-    product_id = product_id.upper().replace(' ', '_')
-    product_data = Database.get_product_from_bazaar(product_id, complex)
+  def show_bazaar(product: str, complex=False):
+    product_data = Database.get_product_from_bazaar(NameResolver.to_id(product), complex)
     fig = plt.figure()
-    fig.suptitle(product_id, fontsize=24)
+    fig.suptitle(NameResolver.to_name(product), fontsize=24)
     if complex:
       gs = gridspec.GridSpec(2, 2)
     else:
@@ -103,11 +103,10 @@ class DataPlotter:
     plt.show()
 
   @staticmethod
-  def show_auction(product_id: str, complex=False):
-    product_id = product_id.upper().replace(' ', '_')
-    product_data = Database.get_product_from_auction(product_id, complex)
+  def show_auction(product: str, complex=False):
+    product_data = Database.get_product_from_auction(NameResolver.to_id(product), complex)
     fig = plt.figure()
-    fig.suptitle(product_id, fontsize=24)
+    fig.suptitle(NameResolver.to_name(product), fontsize=24)
     if not complex:
       gs = gridspec.GridSpec(1, 1)
       ax_price = plt.subplot(gs[0, 0])

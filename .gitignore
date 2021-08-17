@@ -3,3 +3,4 @@ __pycache__
 /data/hypixel-skyblock.db
 /data/api_key.txt
 /data/logs
+/data/item_translation.json

@@ -4,6 +4,7 @@ import sys
 from data_plotter import DataPlotter
 from database import Database
 from downloader import Downloader
+from name_resolver import NameResolver
 from skyblock_api import SkyblockApi
 
 
@@ -15,6 +16,7 @@ def main():
 def init():
   SkyblockApi.init()
   Database.init()
+  NameResolver.init()
   # Database.setup()
 
 

@@ -3,6 +3,7 @@ import sqlite3 as sl
 from time import time
 
 from data_utils import DataUtils
+from name_resolver import NameResolver
 from nbt_decoder import NbtDecoder
 from utils import Utils
 
@@ -109,6 +110,7 @@ class Database:
 
   @staticmethod
   def get_product_from_bazaar(product: str, complex=False):
+    product = NameResolver.to_id(product)
     data = {}
     tables = Database.bazaar_tables if complex else ['BazaarBuyPrice', 'BazaarSellPrice']
     for table in tables:
@@ -134,6 +136,7 @@ class Database:
 
   @staticmethod
   def get_product_from_auction(product: str, complex=False):
+    product = NameResolver.to_id(product)
     if not complex:
       data = {'times': [], 'values': []}
     else:
