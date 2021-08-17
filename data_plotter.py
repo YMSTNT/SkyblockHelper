@@ -103,9 +103,9 @@ class DataPlotter:
     plt.show()
 
   @staticmethod
-  def show_auctions(product_id: str, complex=False):
+  def show_auction(product_id: str, complex=False):
     product_id = product_id.upper().replace(' ', '_')
-    product_data = Database.get_product_from_auctions(product_id, complex)
+    product_data = Database.get_product_from_auction(product_id, complex)
     fig = plt.figure()
     fig.suptitle(product_id, fontsize=24)
     if not complex:

@@ -19,15 +19,13 @@ class Downloader:
         Utils.log(f'[{data["type"]}] Saved data', data['lastUpdated'])
         datas.pop()
       except sqlite3.OperationalError:
-        Utils.log(f'[{data["type"]}] DATABASE ACCESS FAILED')
+        Utils.log(f'[{data["type"]}] Database access failed', save=True)
         break
       except Exception as e:
-        Utils.log(f'[{data["type"]}] FAILED TO PUT DATA TO DATABASE')
-        Utils.log(e)
-        Utils.log(data)
+        Utils.log(f'[{data["type"]}] Failed to put data to database', save=True)
+        Utils.log(e, save=True)
+        Utils.log(data, save=True)
         datas.pop()
-    if len(datas) > 1:
-      Utils.log(f'[{data["type"]}] {len(datas)} datas are waiting in queue')
 
   @staticmethod
   def _catch_input():
@@ -35,34 +33,33 @@ class Downloader:
       inp = input()
       if inp == 'q':
         Utils.quitting = True
-        Utils.log('Quitting')
+        Utils.log('Quitting...')
       elif inp == 'p':
         Utils.paused = not Utils.paused
         if Utils.paused:
-          Utils.log('Paused database access')
+          Utils.log('Pausing database access...')
         else:
           Utils.log('Resumed database access')
 
   @staticmethod
-  def _quit():
-    Utils.log('Saving database')
-    Database.connection.commit()
-    Database.connection.close()
-    Utils.log('Done!')
-
-  @staticmethod
   def download_and_save_data():
     executor = ThreadPoolExecutor()
-    bazaar_data = []
+    bazaar_data, auction_data = [], []
     bazaar_future = executor.submit(SkyblockApi.get_new_bazaar, bazaar_data)
-    auctions_data = []
-    auction_future = executor.submit(SkyblockApi.get_new_ended_auctions, auctions_data)
+    auctions_future = executor.submit(SkyblockApi.get_new_ended_auctions, auction_data)
     executor.submit(Downloader._catch_input)
     should_quit = False
     while not should_quit:
-      should_quit = Utils.quitting and not bazaar_data and not auctions_data and bazaar_future.done() and auction_future.done()
+      should_quit = Utils.quitting and not bazaar_data and not auction_data and bazaar_future.done() and auctions_future.done()
       if not Utils.paused:
+        Database.connect()
         Downloader._put_data_to_db(bazaar_data, Database.insert_bazaar)
-        Downloader._put_data_to_db(auctions_data, Database.insert_auctions)
-      sleep(0.1)
-    Downloader._quit()
+        Downloader._put_data_to_db(auction_data, Database.insert_auctions)
+        sleep(0.1)
+      else:
+        Database.disconnect()
+        Utils.sleep_while(lambda: Utils.paused, 10)
+      if (queue := len(bazaar_data + auction_data)) > 2:
+        Utils.log(f'{queue} datas are waiting in queue', save=True)
+
+    Downloader._save_db()

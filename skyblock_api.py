@@ -10,8 +10,8 @@ class SkyblockApi:
 
   @staticmethod
   def init():
-    with open('data/api_key.txt') as file:
-      SkyblockApi.key = file.readline()
+    with open('data/api_key.txt') as f:
+      SkyblockApi.key = f.readline()
 
   @staticmethod
   def _get(uri: str):
@@ -19,28 +19,25 @@ class SkyblockApi:
     try:
       response = requests.get(f'{base_uri}/{uri}')
       if response.status_code != 200:
-        Utils.log("API failed: " + response.text)
+        Utils.log("Hypixel API failed: " + response.text, save=True)
         return None
       return json.loads(response.text)
     except ConnectionError:
       return None
     except:
-      Utils.log('GET REQUEST FAILED')
+      Utils.log('Hypixel API request failed', save=True)
+      return None
 
   @staticmethod
   def _get_new(uri: str, buffer: list, delay: int, log_type: str):
     last_time = 0
     while not Utils.quitting:
-      data = SkyblockApi._get(uri)
-      if(data and data['lastUpdated'] > last_time):
-        data['type'] = log_type
+      if (data := SkyblockApi._get(uri)) and data['lastUpdated'] != last_time:
         last_time = data['lastUpdated']
+        data['type'] = log_type
         Utils.log(f'[{data["type"]}] Downloaded data', data['lastUpdated'])
         buffer.insert(0, data)
-      for _ in range(delay * 10):
-        if Utils.quitting:
-          break
-        sleep(0.1)
+      Utils.sleep_while(lambda: not Utils.quitting, delay)
     Utils.log(f'[{data["type"]}] Stopped downloading')
 
   @staticmethod

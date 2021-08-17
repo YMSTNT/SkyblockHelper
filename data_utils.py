@@ -10,7 +10,7 @@ class DataUtils:
   DAY = HOUR * 24
 
   @staticmethod
-  def smooth_data(data, smooth_time):
+  def smooth_data(data, smooth_time: int, data_index: str):
     data = data.copy()
     data.reverse()
     smoothened = []
@@ -20,10 +20,10 @@ class DataUtils:
       average = []
       j = i
       while j < len(data) and data[j]['time'] > time_ago:
-        average.append(data[j]['unit_price'])
+        average.append(data[j][data_index])
         j += 1
       average_final = sum(average) / len(average)
-      smoothened.append({'time': data[i]['time'], 'price': average_final})
+      smoothened.append({'time': data[i]['time'], data_index: average_final})
       i += int(len(average) / 5 + 1)
     smoothened.reverse()
     return smoothened
