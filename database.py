@@ -124,6 +124,8 @@ class Database:
     items = []
     for auction in auctions['auctions']:
       nbt_data = NbtDecoder.get_item_data_from_bytes(auction['item_bytes'])
+      if nbt_data['count'] < 1:
+        continue
       unit_price = auction['price'] / nbt_data['count']
       items.append((auction['timestamp'], nbt_data['name'], nbt_data['count'],
                     auction['price'], unit_price, auction['bin'], auction['item_bytes']))
