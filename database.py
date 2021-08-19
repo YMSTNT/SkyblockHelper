@@ -20,6 +20,10 @@ class Database:
         'BazaarBuyPrice', 'BazaarBuyVolume', 'BazaarBuyMovingWeek', 'BazaarBuyOrders',
         'BazaarSellPrice', 'BazaarSellVolume', 'BazaarSellMovingWeek', 'BazaarSellOrders'
     ]
+    Database.setup()
+    # load seen auction ids
+    query = Database.execute('SELECT name FROM AuctionPrices')
+    Database.auction_ids = [r[0] for r in query]
 
   @staticmethod
   def connect():
@@ -63,6 +67,15 @@ class Database:
       );
     """)
 
+    Database.try_execute(f"""
+      CREATE TABLE AuctionPrices (
+        name TEXT,
+        price REAL,
+        time INTEGER,
+        priority INTEGER
+      );
+    """)
+
   @staticmethod
   def execute(sql: str):
     with Database.connection:
@@ -78,7 +91,7 @@ class Database:
     try:
       Database.execute(sql)
     except:
-      Utils.log('SQL FAILED, SKIPPING:', sql[0:50], '...')
+      Utils.log(f'SQL FAILED, SKIPPING: {sql[0:50]}...')
 
   @staticmethod
   def insert_bazaar(bazaar: dict):
@@ -123,6 +136,7 @@ class Database:
 
   @staticmethod
   def insert_auctions(auctions):
+    # get items from auction data
     items = []
     for auction in auctions['auctions']:
       nbt_data = NbtDecoder.get_item_data_from_bytes(auction['item_bytes'])
@@ -131,8 +145,16 @@ class Database:
       unit_price = auction['price'] / nbt_data['count']
       items.append((auction['timestamp'], nbt_data['name'], nbt_data['count'],
                     auction['price'], unit_price, auction['bin'], auction['item_bytes']))
+    # insert items to EndedAuctions
     Database.executemany(
         'INSERT INTO EndedAuctions(time, name, count, price, unit_price, bin, nbt) VALUES(?, ?, ?, ?, ?, ?, ?)', items)
+    # update seen auction item ids
+    item_ids = set([r[1] for r in items])
+    new_item_ids = [id for id in item_ids if id not in Database.auction_ids]
+    for new_id in new_item_ids:
+      Database.execute(f'INSERT INTO AuctionPrices(name, time, price, priority) VALUES("{new_id}", 0, 0, 1)')
+      Database.auction_ids.append(new_id)
+      Utils.log(f'New auction item found: {new_id}', save=True)
 
   @staticmethod
   def get_product_from_auction(product: str, complex=False):
