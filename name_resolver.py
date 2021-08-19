@@ -44,10 +44,10 @@ class NameResolver:
   @staticmethod
   def to_id(name: str):
     name = name.lower()
+    if (id := name) in NameResolver.ids:
+      return id.upper()
     if name in NameResolver.names:
       return NameResolver._name_to_id[name]
-    if (id := name) in NameResolver.ids:
-      return NameResolver._name_to_id[NameResolver._id_to_name[id].lower()]
     names = [key for key in NameResolver.names if name in key]
     if len(names) == 1:
       return names[0]
