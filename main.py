@@ -17,7 +17,6 @@ def init():
   SkyblockApi.init()
   Database.init()
   NameResolver.init()
-  # Database.setup()
 
 
 if __name__ == '__main__':
