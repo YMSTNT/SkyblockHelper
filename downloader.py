@@ -67,6 +67,7 @@ class Downloader:
       auction_prices.sort(key=lambda k: k['time'] or 0)
       for price_data in auction_prices:
         yield Downloader._update_auction_price_for_id(price_data['name'])
+      yield
 
   @staticmethod
   def download_and_save_data():
