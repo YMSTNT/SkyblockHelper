@@ -239,3 +239,20 @@ class Database:
       data['AuctionOrders']['values'].reverse()
 
       return data
+
+  @staticmethod
+  def load_all_price():
+    result = {'buy': {}, 'sell': {}}
+    bazaar_sql = ','.join(Database.bazaar_ids)
+    query = Database.execute(f'SELECT {bazaar_sql} FROM BazaarBuyPrice ORDER BY id DESC LIMIT 1')
+    bazaar_buy_row = next(query)
+    query = Database.execute(f'SELECT {bazaar_sql} FROM BazaarSellPrice ORDER BY id DESC LIMIT 1')
+    bazaar_sell_row = next(query)
+    for i in range(len(Database.bazaar_ids)):
+      result['buy'][Database.bazaar_ids[i]] = bazaar_buy_row[i]
+      result['sell'][Database.bazaar_ids[i]] = bazaar_sell_row[i]
+    query = Database.execute('SELECT name, price FROM AuctionPrices')
+    for row in query:
+      result['buy'][row[0]] = row[1]
+      result['sell'][row[0]] = row[1]
+    Database.all_prices = result

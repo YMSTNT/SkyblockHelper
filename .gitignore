@@ -4,3 +4,4 @@ __pycache__
 /data/api_key.txt
 /data/logs
 /data/item_translation.json
+/data/forge_details.json
