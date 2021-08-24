@@ -48,10 +48,10 @@ class DataPlotter:
       gs = gridspec.GridSpec(1, 1)
 
     ax_price = plt.subplot(gs[0, 0])
-    ax_price.plot(product_data['BazaarBuyPrice']['times'],
-                  product_data['BazaarBuyPrice']['values'], 'r', label='Insta Buy = Sell Offer')
-    ax_price.plot(product_data['BazaarSellPrice']['times'],
-                  product_data['BazaarSellPrice']['values'], 'b', label='Insta Sell = Buy Order')
+    ax_price.plot(product_data['BazaarBuyPrices']['times'],
+                  product_data['BazaarBuyPrices']['values'], 'r', label='Insta Buy = Sell Offer')
+    ax_price.plot(product_data['BazaarSellPrices']['times'],
+                  product_data['BazaarSellPrices']['values'], 'b', label='Insta Sell = Buy Order')
     ax_price.legend()
     ax_price.set_ylabel('Price', fontsize=18)
     ax_price.set_xlabel('Time ago', fontsize=18)
@@ -62,10 +62,10 @@ class DataPlotter:
 
     if complex:
       ax_volume = plt.subplot(gs[0, 1])
-      ax_volume.plot(product_data['BazaarBuyVolume']['times'],
-                     product_data['BazaarBuyVolume']['values'], 'r', label='Insta Buy = Sell Offer')
-      ax_volume.plot(product_data['BazaarSellVolume']['times'],
-                     product_data['BazaarSellVolume']['values'], 'b', label='Insta Sell = Buy Order')
+      ax_volume.plot(product_data['BazaarBuyVolumes']['times'],
+                     product_data['BazaarBuyVolumes']['values'], 'r', label='Insta Buy = Sell Offer')
+      ax_volume.plot(product_data['BazaarSellVolumes']['times'],
+                     product_data['BazaarSellVolumes']['values'], 'b', label='Insta Sell = Buy Order')
       ax_volume.legend()
       ax_volume.set_ylabel('Volume', fontsize=18)
       ax_volume.set_xlabel('Time ago', fontsize=18)
@@ -75,10 +75,10 @@ class DataPlotter:
       plt.grid()
 
       ax_moving = plt.subplot(gs[1, 0])
-      ax_moving.plot(product_data['BazaarBuyMovingWeek']['times'],
-                     product_data['BazaarBuyMovingWeek']['values'], 'r', label='Insta Buy = Sell Offer')
-      ax_moving.plot(product_data['BazaarSellMovingWeek']['times'],
-                     product_data['BazaarSellMovingWeek']['values'], 'b', label='Insta Sell = Buy Order')
+      ax_moving.plot(product_data['BazaarBuyMovingCoins']['times'],
+                     product_data['BazaarBuyMovingCoins']['values'], 'r', label='Insta Buy = Sell Offer')
+      ax_moving.plot(product_data['BazaarBuyMovingCoins']['times'],
+                     product_data['BazaarBuyMovingCoins']['values'], 'b', label='Insta Sell = Buy Order')
       ax_moving.legend()
       ax_moving.set_ylabel('Weekly Moving Coins', fontsize=18)
       ax_moving.set_xlabel('Time ago', fontsize=18)

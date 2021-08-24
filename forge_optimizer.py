@@ -74,7 +74,7 @@ class ForgeOptimizer:
         product_name = NameResolver.to_name(item)
         forge_hours = round(details['duration'] / 1000 / 60 / 60, 2)
         profits.append({'profit': f'{profit}k', 'name': product_name, 'hours': forge_hours})
-      except KeyError:
+      except (KeyError, TypeError):
         print(f'Skipping {item} due to lack of price info')
     profits.sort(key=lambda p: p['profit'], reverse=True)
     for p in profits:

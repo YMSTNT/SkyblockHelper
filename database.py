@@ -1,6 +1,7 @@
 import json
-import sqlite3 as sl
 from time import time
+
+import mariadb
 
 from data_utils import DataUtils
 from name_resolver import NameResolver
@@ -17,19 +18,21 @@ class Database:
     with open('data/bazaar_items.json') as f:
       Database.bazaar_ids = json.loads(f.readline())
     Database.bazaar_tables = [
-        'BazaarBuyPrice', 'BazaarBuyVolume', 'BazaarBuyMovingWeek', 'BazaarBuyOrders',
-        'BazaarSellPrice', 'BazaarSellVolume', 'BazaarSellMovingWeek', 'BazaarSellOrders'
+        'BazaarBuyPrices', 'BazaarBuyVolumes', 'BazaarBuyMovingCoins', 'BazaarBuyOrders',
+        'BazaarSellPrices', 'BazaarSellVolumes', 'BazaarSellMovingCoins', 'BazaarSellOrders'
     ]
     Database.setup()
     # load seen auction ids
-    query = Database.execute('SELECT name FROM AuctionPrices')
+    query = Database.get('SELECT name FROM AuctionPrices')
     Database.auction_ids = [r[0] for r in query]
 
   @staticmethod
   def connect():
     if not Database.connection:
       Utils.log('Connecting to database...')
-      Database.connection = sl.connect('data/hypixel-skyblock.db')
+      with open('data/db_auth.json', 'r') as f:
+        c = json.load(f)
+        Database.connection = mariadb.connect(user=c['user'], password=c['password'], host=c['host'], port=c['port'], database=c['database'])
       Utils.log('Connected to database', save=True)
 
   @staticmethod
@@ -43,55 +46,59 @@ class Database:
 
   @staticmethod
   def setup():
-    item_ids_sql = [f'{id} REAL' for id in Database.bazaar_ids]
-    item_ids_sql = ','.join(item_ids_sql)
+    bazaar_ids_sql = [f'`{id}` DEC(15, 1)' for id in Database.bazaar_ids]
+    bazaar_ids_sql = ','.join(bazaar_ids_sql)
     for table in Database.bazaar_tables:
-      Database.try_execute(f"""
-        CREATE TABLE {table} (
-          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-          time INTEGER,
-          {item_ids_sql}
+      Database.put(f"""
+        CREATE TABLE IF NOT EXISTS {table} (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          last_updated BIGINT,
+          {bazaar_ids_sql}
         );
       """)
 
-    Database.try_execute(f"""
-      CREATE TABLE EndedAuctions (
-        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        time INTEGER,
-        name TEXT,
-        count INTEGER,
-        price REAL,
-        unit_price REAL,
-        bin INTEGER,
+    Database.put(f"""
+      CREATE TABLE IF NOT EXISTS EndedAuctions (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        last_updated BIGINT,
+        name VARCHAR(100),
+        count TINYINT,
+        price INT,
+        bin BOOLEAN,
         nbt BLOB
       );
     """)
 
-    Database.try_execute(f"""
-      CREATE TABLE AuctionPrices (
-        name TEXT,
-        price REAL,
-        time INTEGER,
-        priority INTEGER
+    Database.put(f"""
+      CREATE TABLE IF NOT EXISTS AuctionPrices (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        last_updated BIGINT,
+        name VARCHAR(100),
+        buy_price INT,
+        sell_price INT,
+        priority INT
       );
     """)
 
   @staticmethod
-  def execute(sql: str):
-    with Database.connection:
-      return Database.connection.execute(sql.replace(':', '__'))
+  def put(sql: str):
+    with Database.connection.cursor() as cur:
+      cur.execute(sql)
+      Database.connection.commit()
 
   @staticmethod
-  def executemany(sql: str, data):
-    with Database.connection:
-      return Database.connection.executemany(sql.replace(':', '__'), data)
+  def get(sql: str):
+    result = []
+    with Database.connection.cursor() as cur:
+      cur.execute(sql)
+      result = cur.fetchall()
+    return result
 
   @staticmethod
-  def try_execute(sql: str):
-    try:
-      Database.execute(sql)
-    except:
-      Utils.log(f'SQL FAILED, SKIPPING: {sql[0:50]}...')
+  def putmany(sql: str, data):
+    with Database.connection.cursor() as cur:
+      cur.executemany(sql, data)
+      Database.connection.commit()
 
   @staticmethod
   def insert_bazaar(bazaar: dict):
@@ -101,33 +108,33 @@ class Database:
       quick_status = product['quick_status']
       if product['buy_summary']:
 
-        data['BazaarBuyPrice'].append(product['buy_summary'][0]['pricePerUnit'])
+        data['BazaarBuyPrices'].append(product['buy_summary'][0]['pricePerUnit'])
       else:
-        data['BazaarBuyPrice'].append(-1)
-      data['BazaarBuyVolume'].append(quick_status['buyVolume'])
-      data['BazaarBuyMovingWeek'].append(quick_status['buyMovingWeek'])
+        data['BazaarBuyPrices'].append(-1)
+      data['BazaarBuyVolumes'].append(quick_status['buyVolume'])
+      data['BazaarBuyMovingCoins'].append(quick_status['buyMovingWeek'])
       data['BazaarBuyOrders'].append(quick_status['buyOrders'])
 
       if product['sell_summary']:
-        data['BazaarSellPrice'].append(product['sell_summary'][0]['pricePerUnit'])
+        data['BazaarSellPrices'].append(product['sell_summary'][0]['pricePerUnit'])
       else:
-        data['BazaarSellPrice'].append(-1)
-      data['BazaarSellVolume'].append(quick_status['sellVolume'])
-      data['BazaarSellMovingWeek'].append(quick_status['sellMovingWeek'])
+        data['BazaarSellPrices'].append(-1)
+      data['BazaarSellVolumes'].append(quick_status['sellVolume'])
+      data['BazaarSellMovingCoins'].append(quick_status['sellMovingWeek'])
       data['BazaarSellOrders'].append(quick_status['sellOrders'])
 
-    item_ids_sql = ",".join(Database.bazaar_ids)
+    item_ids_sql = ",".join([f'`{id}`' for id in Database.bazaar_ids])
     for table_name, values in data.items():
       values_sql = ','.join([str(v) for v in values])
-      Database.execute(f'INSERT INTO {table_name}(time, {item_ids_sql}) VALUES({bazaar["lastUpdated"]}, {values_sql})')
+      Database.put(f'INSERT INTO {table_name}(last_updated, {item_ids_sql}) VALUES({bazaar["lastUpdated"]}, {values_sql})')
 
   @staticmethod
   def get_product_from_bazaar(product: str, complex=False):
     product = NameResolver.to_id(product)
     data = {}
-    tables = Database.bazaar_tables if complex else ['BazaarBuyPrice', 'BazaarSellPrice']
+    tables = Database.bazaar_tables if complex else ['BazaarBuyPrices', 'BazaarSellPrices']
     for table in tables:
-      query = Database.execute(f'SELECT time, {product} FROM {table}')
+      query = Database.get(f'SELECT last_updated, {product} FROM {table}')
       data[table] = {'times': [], 'values': []}
       for row in query:
         data[table]['times'].append(row[0])
@@ -142,17 +149,16 @@ class Database:
       nbt_data = NbtDecoder.get_item_data_from_bytes(auction['item_bytes'])
       if nbt_data['count'] < 1:
         continue
-      unit_price = auction['price'] / nbt_data['count']
       items.append((auction['timestamp'], nbt_data['name'], nbt_data['count'],
-                    auction['price'], unit_price, auction['bin'], auction['item_bytes']))
+                    auction['price'], auction['bin'], auction['item_bytes']))
     # insert items to EndedAuctions
-    Database.executemany(
-        'INSERT INTO EndedAuctions(time, name, count, price, unit_price, bin, nbt) VALUES(?, ?, ?, ?, ?, ?, ?)', items)
+    Database.putmany(
+        'INSERT INTO EndedAuctions(last_updated, name, count, price, bin, nbt) VALUES(?, ?, ?, ?, ?, ?)', items)
     # update seen auction item ids
     item_ids = set([r[1] for r in items])
     new_item_ids = [id for id in item_ids if id not in Database.auction_ids]
     for new_id in new_item_ids:
-      Database.execute(f'INSERT INTO AuctionPrices(name, time, price, priority) VALUES("{new_id}", 0, 0, 1)')
+      Database.execute(f'INSERT INTO AuctionPrices(name, priority) VALUES("{new_id}", 1)')
       Database.auction_ids.append(new_id)
       Utils.log(f'New auction item found: {new_id}', save=True)
 
@@ -172,7 +178,7 @@ class Database:
           'AuctionMovingCoins': {'times': [], 'values': []},
           'AuctionOrders': {'times': [], 'values': []},
       }
-    query = Database.execute(f'SELECT time, price, count, bin FROM EndedAuctions WHERE name = "{product}"')
+    query = Database.get(f'SELECT last_updated, price, count, bin FROM EndedAuctions WHERE name = "{product}"')
     query = [{'time': r[0], 'price': r[1], 'count': r[2], 'bin': r[3]} for r in query]
     for row in query:
       row['unit_price'] = row['price'] / row['count']
@@ -243,16 +249,16 @@ class Database:
   @staticmethod
   def load_all_price():
     result = {'buy': {}, 'sell': {}}
-    bazaar_sql = ','.join(Database.bazaar_ids)
-    query = Database.execute(f'SELECT {bazaar_sql} FROM BazaarBuyPrice ORDER BY id DESC LIMIT 1')
-    bazaar_buy_row = next(query)
-    query = Database.execute(f'SELECT {bazaar_sql} FROM BazaarSellPrice ORDER BY id DESC LIMIT 1')
-    bazaar_sell_row = next(query)
+    bazaar_sql = ','.join([f'`{id}`' for id in Database.bazaar_ids])
+    query = Database.get(f'SELECT {bazaar_sql} FROM BazaarBuyPrices ORDER BY id DESC LIMIT 1')
+    bazaar_buy_row = query[0]
+    query = Database.get(f'SELECT {bazaar_sql} FROM BazaarSellPrices ORDER BY id DESC LIMIT 1')
+    bazaar_sell_row = query[0]
     for i in range(len(Database.bazaar_ids)):
       result['buy'][Database.bazaar_ids[i]] = bazaar_buy_row[i]
       result['sell'][Database.bazaar_ids[i]] = bazaar_sell_row[i]
-    query = Database.execute('SELECT name, price FROM AuctionPrices')
+    query = Database.get('SELECT name, buy_price, sell_price FROM AuctionPrices')
     for row in query:
       result['buy'][row[0]] = row[1]
-      result['sell'][row[0]] = row[1]
+      result['sell'][row[0]] = row[2]
     Database.all_prices = result

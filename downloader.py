@@ -50,7 +50,7 @@ class Downloader:
     # get relevant prices, calculate average
     now = int(time() * 1000)
     three_days_ago = now - DataUtils.DAY * 3
-    query = Database.execute(f'SELECT price, count FROM EndedAuctions WHERE name = "{id}" AND time > {three_days_ago}')
+    query = Database.get(f'SELECT price, count FROM EndedAuctions WHERE name = "{id}" AND time > {three_days_ago}')
     prices = [r[0] / r[1] for r in query]
     if prices:
       mode = int(stats.mode(prices)[0])
@@ -59,14 +59,14 @@ class Downloader:
     else:
       average_price = -1
     # insert average to db
-    Database.execute(f'UPDATE AuctionPrices SET price = {average_price}, time = {now} WHERE name = "{id}"')
+    Database.put(f'UPDATE AuctionPrices SET price = {average_price}, time = {now} WHERE name = "{id}"')
     Utils.log(f'[ah] Updated price for {id}', now)
 
   @staticmethod
   def _update_auction_prices():
     while True:
-      query = Database.execute('SELECT name, price, time FROM AuctionPrices WHERE priority > 0')
-      auction_prices = [{'name': r[0], 'price': r[1], 'time': r[2]} for r in query]
+      query = Database.get('SELECT last_updated, name FROM AuctionPrices WHERE priority > 0')
+      auction_prices = [{'time': r[0], 'name': r[1]} for r in query]
       auction_prices.sort(key=lambda k: k['time'] or 0)
       if not auction_prices:
         yield
