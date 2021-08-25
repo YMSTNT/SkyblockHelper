@@ -46,7 +46,7 @@ class Database:
 
   @staticmethod
   def setup():
-    bazaar_ids_sql = [f'`{id}` DEC(15, 1)' for id in Database.bazaar_ids]
+    bazaar_ids_sql = [f'`{id}` DEC(20, 1)' for id in Database.bazaar_ids]
     bazaar_ids_sql = ','.join(bazaar_ids_sql)
     for table in Database.bazaar_tables:
       Database.put(f"""
@@ -158,7 +158,7 @@ class Database:
     item_ids = set([r[1] for r in items])
     new_item_ids = [id for id in item_ids if id not in Database.auction_ids]
     for new_id in new_item_ids:
-      Database.execute(f'INSERT INTO AuctionPrices(name, priority) VALUES("{new_id}", 1)')
+      Database.put(f'INSERT INTO AuctionPrices(name, priority) VALUES("{new_id}", 1)')
       Database.auction_ids.append(new_id)
       Utils.log(f'New auction item found: {new_id}', save=True)
 
