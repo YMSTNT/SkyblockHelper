@@ -1,4 +1,5 @@
 import json
+import os
 from time import sleep
 
 import requests
@@ -10,8 +11,7 @@ class SkyblockApi:
 
   @staticmethod
   def init():
-    with open('data/api_key.txt') as f:
-      SkyblockApi.key = f.readline()
+    SkyblockApi.key = os.getenv('HYPIXEL_API_KEY')
 
   @staticmethod
   def _get(uri: str):

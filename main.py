@@ -1,6 +1,8 @@
 
 import sys
 
+from dotenv import load_dotenv
+
 from data_plotter import DataPlotter
 from database import Database
 from downloader import Downloader
@@ -11,10 +13,13 @@ from skyblock_api import SkyblockApi
 
 def main():
   DataPlotter.show_bazaar('BOOSTER_COOKIE', complex=True)
+  DataPlotter.show_auction('GOD_POTION_2', complex=True)
+  ForgeOptimizer.optimize()
   return
 
 
 def init():
+  load_dotenv('data/.env')
   SkyblockApi.init()
   Database.init()
   NameResolver.init()

@@ -1,4 +1,5 @@
 import json
+import os
 from time import time
 
 import mariadb
@@ -30,9 +31,7 @@ class Database:
   def connect():
     if not Database.connection:
       Utils.log('Connecting to database...')
-      with open('data/db_auth.json', 'r') as f:
-        c = json.load(f)
-        Database.connection = mariadb.connect(user=c['user'], password=c['password'], host=c['host'], port=c['port'], database=c['database'])
+      Database.connection = mariadb.connect(host=os.getenv('DB_HOST'), port=int(os.getenv('DB_PORT')), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), database=os.getenv('DB_NAME'))
       Utils.log('Connected to database', save=True)
 
   @staticmethod
