@@ -10,7 +10,7 @@ class ForgeOptimizer:
 
   @staticmethod
   def init():
-    if not os.path.exists('data/item_translation.json'):
+    if not os.path.exists('data/forge_details.json'):
       ForgeOptimizer.cache()
     with open('data/forge_details.json') as f:
       ForgeOptimizer.details = json.load(f)

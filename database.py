@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from time import time
 
 import mariadb
@@ -17,21 +18,24 @@ class Database:
     Database.connection = None
     Database.connect()
     with open('data/bazaar_items.json') as f:
-      Database.bazaar_ids = json.loads(f.readline())
+      Database.bazaar_ids = json.load(f)
     Database.bazaar_tables = [
         'BazaarBuyPrices', 'BazaarBuyVolumes', 'BazaarBuyMovingCoins', 'BazaarBuyOrders',
         'BazaarSellPrices', 'BazaarSellVolumes', 'BazaarSellMovingCoins', 'BazaarSellOrders'
     ]
     Database.setup()
     # load seen auction ids
-    query = Database.get('SELECT name FROM AuctionPrices')
-    Database.auction_ids = [r[0] for r in query]
+    query = Database.select('SELECT name FROM AuctionPrices')
+    Database.auction_ids = [r['name'] for r in query]
 
   @staticmethod
   def connect():
     if not Database.connection:
       Utils.log('Connecting to database...')
-      Database.connection = mariadb.connect(host=os.getenv('DB_HOST'), port=int(os.getenv('DB_PORT')), user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'), database=os.getenv('DB_NAME'))
+      Database.connection = mariadb.connect(
+          host=os.getenv('DB_HOST'), port=int(os.getenv('DB_PORT')),
+          user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'),
+          database=os.getenv('DB_NAME'))
       Utils.log('Connected to database', save=True)
 
   @staticmethod
@@ -94,6 +98,18 @@ class Database:
     return result
 
   @staticmethod
+  def select(sql: str):
+    result = []
+    data = Database.get(sql)
+    columns = re.search('SELECT (.*) FROM', sql).group(1)
+    columns = columns.split(',')
+    columns = [c.strip(' `') for c in columns]
+    for row in data:
+      new_row = {k: v for k, v in zip(columns, row)}
+      result.append(new_row)
+    return result
+
+  @staticmethod
   def putmany(sql: str, data):
     with Database.connection.cursor() as cur:
       cur.executemany(sql, data)
@@ -133,11 +149,11 @@ class Database:
     data = {}
     tables = Database.bazaar_tables if complex else ['BazaarBuyPrices', 'BazaarSellPrices']
     for table in tables:
-      query = Database.get(f'SELECT last_updated, {product} FROM {table}')
+      query = Database.select(f'SELECT last_updated, {product} FROM {table}')
       data[table] = {'times': [], 'values': []}
       for row in query:
-        data[table]['times'].append(row[0])
-        data[table]['values'].append(row[1])
+        data[table]['times'].append(row['last_updated'])
+        data[table]['values'].append(row[product])
     return data
 
   @staticmethod
@@ -177,8 +193,7 @@ class Database:
           'AuctionMovingCoins': {'times': [], 'values': []},
           'AuctionOrders': {'times': [], 'values': []},
       }
-    query = Database.get(f'SELECT last_updated, price, count, bin FROM EndedAuctions WHERE name = "{product}"')
-    query = [{'time': r[0], 'price': r[1], 'count': r[2], 'bin': r[3]} for r in query]
+    query = Database.select(f'SELECT last_updated, price, count, bin FROM EndedAuctions WHERE name = "{product}"')
     for row in query:
       row['unit_price'] = row['price'] / row['count']
     average_price = DataUtils.get_average_price(query, DataUtils.DAY * 3)
@@ -193,7 +208,7 @@ class Database:
     if not complex:
       smoothened = DataUtils.smooth_data(clean_prices, DataUtils.DAY, 'unit_price')
       for row in smoothened:
-        data['times'].append(row['time'])
+        data['times'].append(row['last_updated'])
         data['values'].append(row['price'])
       return data
     else:
@@ -204,12 +219,12 @@ class Database:
       }
       for smoothened_time, smoothened in smootheneds.items():
         for row in smoothened:
-          data['AuctionPrice'][smoothened_time]['times'].append(row['time'])
+          data['AuctionPrice'][smoothened_time]['times'].append(row['last_updated'])
           data['AuctionPrice'][smoothened_time]['values'].append(row['unit_price'])
 
       # max 8 days old data
       eight_days_ago = int(time() * 1000) - DataUtils.DAY * 8
-      filtered = list(filter(lambda r: r['time'] > eight_days_ago, filtered))
+      filtered = list(filter(lambda r: r['last_updated'] > eight_days_ago, filtered))
 
       # calculate daily moving coins, volume and orders
       filtered_week = filtered.copy()
@@ -221,8 +236,8 @@ class Database:
         sum_volume = []
         sum_orders = 0
         j = i
-        while j < len(filtered_week) and filtered_week[j]['time'] > time_start - DataUtils.DAY:
-          if filtered_week[j]['time'] > time_start - DataUtils.HOUR:
+        while j < len(filtered_week) and filtered_week[j]['last_updated'] > time_start - DataUtils.DAY:
+          if filtered_week[j]['last_updated'] > time_start - DataUtils.HOUR:
             i = j
           sum_prices.append(filtered_week[j]['price'])
           sum_volume.append(filtered_week[j]['count'])
@@ -249,15 +264,15 @@ class Database:
   def load_all_price():
     result = {'buy': {}, 'sell': {}}
     bazaar_sql = ','.join([f'`{id}`' for id in Database.bazaar_ids])
-    query = Database.get(f'SELECT {bazaar_sql} FROM BazaarBuyPrices ORDER BY id DESC LIMIT 1')
+    query = Database.select(f'SELECT {bazaar_sql} FROM BazaarBuyPrices ORDER BY id DESC LIMIT 1')
     bazaar_buy_row = query[0]
-    query = Database.get(f'SELECT {bazaar_sql} FROM BazaarSellPrices ORDER BY id DESC LIMIT 1')
+    query = Database.select(f'SELECT {bazaar_sql} FROM BazaarSellPrices ORDER BY id DESC LIMIT 1')
     bazaar_sell_row = query[0]
-    for i in range(len(Database.bazaar_ids)):
-      result['buy'][Database.bazaar_ids[i]] = bazaar_buy_row[i]
-      result['sell'][Database.bazaar_ids[i]] = bazaar_sell_row[i]
-    query = Database.get('SELECT name, buy_price, sell_price FROM AuctionPrices')
+    for id in Database.bazaar_ids:
+      result['buy'][id] = bazaar_buy_row[id]
+      result['sell'][id] = bazaar_sell_row[id]
+    query = Database.select('SELECT name, buy_price, sell_price FROM AuctionPrices')
     for row in query:
-      result['buy'][row[0]] = row[1]
-      result['sell'][row[0]] = row[2]
+      result['buy'][row['name']] = row['buy_price']
+      result['sell'][row['name']] = row['sell_price']
     Database.all_prices = result
