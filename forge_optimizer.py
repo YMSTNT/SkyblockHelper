@@ -73,9 +73,9 @@ class ForgeOptimizer:
         profit = int(product_price - ingredient_price) / 1000
         product_name = NameResolver.to_name(item)
         forge_hours = round(details['duration'] / 1000 / 60 / 60, 2)
-        profits.append({'profit': f'{profit}k', 'name': product_name, 'hours': forge_hours})
+        profits.append({'profit': profit, 'name': product_name, 'hours': forge_hours})
       except (KeyError, TypeError):
         print(f'Skipping {item} due to lack of price info')
     profits.sort(key=lambda p: p['profit'], reverse=True)
     for p in profits:
-      print(f'{p["profit"]} coins per item profit for {p["name"]}, it takes {p["hours"]} hours to forge')
+      print(f'{p["profit"]}k coins per item profit for {p["name"]}, it takes {p["hours"]} hours to forge')
