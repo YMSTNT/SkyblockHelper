@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from time import time
+from time import sleep, time
 
 import mariadb
 
@@ -15,6 +15,7 @@ class Database:
 
   @staticmethod
   def init():
+    Database._locked = False
     Database.connection = None
     Database.connect()
     with open('data/bazaar_items.json') as f:
@@ -35,7 +36,7 @@ class Database:
       Database.connection = mariadb.connect(
           host=os.getenv('DB_HOST'), port=int(os.getenv('DB_PORT')),
           user=os.getenv('DB_USER'), password=os.getenv('DB_PASS'),
-          database=os.getenv('DB_NAME_PROD'))
+          database=os.getenv('DB_NAME_DEBUG' if Utils.debug else 'DB_NAME_PROD'))
       Utils.log('Connected to database', save=True)
 
   @staticmethod
@@ -84,17 +85,30 @@ class Database:
     """)
 
   @staticmethod
+  def _lock():
+    while Database._locked:
+      sleep(0.1)
+    Database._locked = True
+
+  @staticmethod
+  def _release():
+    Database._locked = False
+
+  @staticmethod
   def put(sql: str):
+    Database._lock()
     with Database.connection.cursor() as cur:
       cur.execute(sql)
       Database.connection.commit()
+    Database._release()
 
   @staticmethod
   def get(sql: str):
-    result = []
+    Database._lock()
     with Database.connection.cursor() as cur:
       cur.execute(sql)
       result = cur.fetchall()
+    Database._release()
     return result
 
   @staticmethod
@@ -111,9 +125,11 @@ class Database:
 
   @staticmethod
   def putmany(sql: str, data):
+    Database._lock()
     with Database.connection.cursor() as cur:
       cur.executemany(sql, data)
       Database.connection.commit()
+    Database._release()
 
   @staticmethod
   def insert_bazaar(bazaar: dict):

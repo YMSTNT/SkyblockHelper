@@ -6,6 +6,7 @@ class Utils:
 
   quitting = False
   paused = False
+  debug = False
 
   @staticmethod
   def epoch_to_human_time(epoch: int):
