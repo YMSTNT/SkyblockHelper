@@ -43,6 +43,7 @@ class Downloader:
         Utils.sleep_while(lambda: Utils.paused, 10)
       if (len_datas := len(Downloader.bazaar_data) + len(Downloader.auction_data)) > 2:
         Utils.log(f'{len_datas} datas are waiting in queue', save=True)
+      sleep(0.1)
 
   @staticmethod
   def download_and_save_data(executor: ThreadPoolExecutor):
