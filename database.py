@@ -95,17 +95,27 @@ class Database:
     Database._locked = False
 
   @staticmethod
+  def _retry(action):
+    while True:
+      try:
+        action()
+      except mariadb.OperationalError:
+        Utils.log('DB FAILED, RETRYING')
+      finally:
+        return
+
+  @staticmethod
   def execute(sql: str):
     Database._lock()
     with Database.connection.cursor() as cur:
-      cur.execute(sql)
+      Database._retry(lambda: cur.execute(sql))
     Database._release()
 
   @staticmethod
   def put(sql: str):
     Database._lock()
     with Database.connection.cursor() as cur:
-      cur.execute(sql)
+      Database._retry(lambda: cur.execute(sql))
       Database.connection.commit()
     Database._release()
 
@@ -113,7 +123,7 @@ class Database:
   def get(sql: str):
     Database._lock()
     with Database.connection.cursor() as cur:
-      cur.execute(sql)
+      Database._retry(lambda: cur.execute(sql))
       result = cur.fetchall()
     Database._release()
     return result
@@ -134,7 +144,7 @@ class Database:
   def putmany(sql: str, data):
     Database._lock()
     with Database.connection.cursor() as cur:
-      cur.executemany(sql, data)
+      Database._retry(lambda: cur.executemany(sql, data))
       Database.connection.commit()
     Database._release()
 
