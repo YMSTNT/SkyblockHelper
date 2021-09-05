@@ -95,6 +95,13 @@ class Database:
     Database._locked = False
 
   @staticmethod
+  def execute(sql: str):
+    Database._lock()
+    with Database.connection.cursor() as cur:
+      cur.execute(sql)
+    Database._release()
+
+  @staticmethod
   def put(sql: str):
     Database._lock()
     with Database.connection.cursor() as cur:

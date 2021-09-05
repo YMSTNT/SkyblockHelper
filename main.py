@@ -4,8 +4,8 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 from dotenv import load_dotenv
 
-from data_plotter import DataPlotter
 from database import Database
+from database_cleaner import DatabaseCleaner
 from downloader import Downloader
 from forge_optimizer import ForgeOptimizer
 from name_resolver import NameResolver
@@ -26,7 +26,8 @@ class Main:
     ForgeOptimizer.init()
 
     executor = ThreadPoolExecutor()
-    executor.submit(Main._catch_input)
+    if args.download or args.update:
+      executor.submit(Main._catch_input)
     if args.main:
       Main.main()
     if args.download:
@@ -35,6 +36,8 @@ class Main:
       executor.submit(PriceUpdater.update_auction_prices)
     if args.api:
       pass
+    if args.clean:
+      DatabaseCleaner.clean()
 
   @staticmethod
   def _parse_args():
@@ -49,6 +52,8 @@ class Main:
                         help='start a flask webserver listening for API requests')
     parser.add_argument('-b', '--debug', action='store_true',
                         help='use the debug database')
+    parser.add_argument('-c', '--clean', action='store_true',
+                        help='clean old records in the database')
     args = parser.parse_args()
     if not any(vars(args).values()):
       parser.error('No arguments provided.')
@@ -56,6 +61,7 @@ class Main:
 
   @staticmethod
   def main():
+    from data_plotter import DataPlotter
     DataPlotter.show_bazaar('BOOSTER_COOKIE', complex=True)
     DataPlotter.show_auction('GOD_POTION_2', complex=True)
     ForgeOptimizer.optimize()

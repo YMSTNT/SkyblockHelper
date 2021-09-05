@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Main",
+      "name": "Main (Debug)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
@@ -12,7 +12,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Download",
+      "name": "Download (Debug)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
@@ -22,7 +22,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Update",
+      "name": "Update (Debug)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
@@ -32,7 +32,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "API",
+      "name": "API (Debug)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
@@ -42,7 +42,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Server",
+      "name": "Server (Debug)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
@@ -50,6 +50,76 @@
         "-bdua"
       ],
       "console": "integratedTerminal"
-    }
+    },
+    {
+      "name": "Clean DB (Debug)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-bc"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Main (Release)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-m"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Download (Release)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-d"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Update (Release)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-u"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "API (Release)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-a"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Server (Release)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-dua"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Clean DB (Release)",
+      "type": "python",
+      "request": "launch",
+      "program": "main.py",
+      "args": [
+        "-c"
+      ],
+      "console": "integratedTerminal"
+    },
   ]
 }

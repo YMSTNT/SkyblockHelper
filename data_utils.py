@@ -6,7 +6,8 @@ from scipy import stats
 
 class DataUtils:
 
-  HOUR = 1000 * 60 * 60
+  MINUTE = 1000 * 60
+  HOUR = MINUTE * 60
   DAY = HOUR * 24
 
   @staticmethod
