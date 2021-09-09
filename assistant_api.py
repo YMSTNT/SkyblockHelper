@@ -1,5 +1,5 @@
 from time import time
-
+from events import Events
 
 class AssistantApi:
   def main(endpoint):
@@ -41,5 +41,5 @@ class AssistantApi:
         }
       ]
     }
-    return {'status': 200, 'data': placeholder}
+    return {'status': 200, 'data': Events.get()}
 
