@@ -3,6 +3,7 @@ from time import time
 from data_utils import DataUtils
 from database import Database
 from utils import Utils
+import random
 
 
 class DatabaseCleaner:
@@ -41,10 +42,14 @@ class DatabaseCleaner:
   def clean_auctions():
     Utils.log('[ah] Cleaning EndedAuctions table...', save=True)
     a_week_ago = int(time() * 1000) - DataUtils.DAY * 7
-    for item in Database.auction_ids:
+    Utils.log('[ah] Counting auctions...', save=True)
+    query = Database.select(f'SELECT name FROM EndedAuctions WHERE last_updated < {a_week_ago} GROUP BY name ORDER BY COUNT(*) DESC')
+    ids = []
+    for row in query:
+        ids.append(row['name'])
+    Utils.log('[ah] Counted auctions', save=True)
+    for item in ids:
       query = Database.select(f'SELECT id, last_updated FROM EndedAuctions WHERE last_updated < {a_week_ago} AND name = "{item}" ORDER BY last_updated DESC')
-      # if len(query) < 10:
-      #   continue
       ids = []
       last_time = int(time() * 1000)
       for row in query:
@@ -58,7 +63,7 @@ class DatabaseCleaner:
           last_time = row['last_updated']
       Utils.log(f'[ah] Deleting {len(ids)} of {len(query)} rows from EndedAuctions WHERE name = {item}...', save=True)
       if ids:
-        rows_per_query = 100_000
+        rows_per_query = 10_000
         for i in range(0, len(ids), rows_per_query):
           sub_ids = ids[i: i + rows_per_query]
           Database.putmany('DELETE FROM EndedAuctions WHERE id = ?', sub_ids)

@@ -28,6 +28,9 @@ class Database:
     # load seen auction ids
     query = Database.select('SELECT name FROM AuctionPrices')
     Database.auction_ids = [r['name'] for r in query]
+    if os.getenv('LIGHT_MODE'):
+      Database.last_auctions = {}
+
 
   @staticmethod
   def connect():
@@ -193,12 +196,26 @@ class Database:
   def insert_auctions(auctions):
     # get items from auction data
     items = []
-    for auction in auctions['auctions']:
-      nbt_data = NbtDecoder.get_item_data_from_bytes(auction['item_bytes'])
-      if nbt_data['count'] < 1:
+    auctions = auctions['auctions']
+    for auction in auctions:
+      nbt = NbtDecoder.get_item_data_from_bytes(auction['item_bytes'])
+      if nbt['count'] < 1:
         continue
-      items.append((auction['timestamp'], nbt_data['name'], nbt_data['count'],
+      if os.getenv('LIGHT_MODE'):
+        item_name = nbt['name']
+        item_time = auction['timestamp']
+        if item_name not in Database.last_auctions:
+          Database.last_auctions[item_name] = 0
+        LIGHT_MODE_DELAY = DataUtils.MINUTE * 10
+        if Database.last_auctions[item_name] + LIGHT_MODE_DELAY > int(time() * 1000):
+          continue
+        Database.last_auctions[item_name] = item_time
+      items.append((auction['timestamp'], nbt['name'], nbt['count'],
                     auction['price'], auction['bin'], auction['item_bytes']))
+
+    if os.getenv('LIGHT_MODE'):
+      percentage = round(len(items) * 100 / len(auctions))
+      Utils.log(f'[ah] Saving {percentage}% of auctions to database')
     # insert items to EndedAuctions
     Database.putmany(
         'INSERT INTO EndedAuctions(last_updated, name, count, price, bin, nbt) VALUES(?, ?, ?, ?, ?, ?)', items)
