@@ -12,6 +12,8 @@ from name_resolver import NameResolver
 from price_updater import PriceUpdater
 from skyblock_api import SkyblockApi
 from utils import Utils
+from assistant_api import AssistantApi
+import json
 
 
 class Main:
@@ -19,6 +21,7 @@ class Main:
   def init():
     args = Main._parse_args()
     Utils.debug = args.debug
+    Utils.silent = args.silent
     load_dotenv('data/.env')
     SkyblockApi.init()
     Database.init()
@@ -35,7 +38,8 @@ class Main:
     if args.update:
       executor.submit(PriceUpdater.update_auction_prices)
     if args.api:
-      pass
+      response = AssistantApi.main(args.api)
+      print(json.dumps(response))
     if args.clean:
       DatabaseCleaner.clean()
 
@@ -48,12 +52,14 @@ class Main:
                         help='download skyblock data from Hypixel and store it in the database')
     parser.add_argument('-u', '--update', action='store_true',
                         help='update current auction house buy and sell prices')
-    parser.add_argument('-a', '--api', action='store_true',
+    parser.add_argument('-a', '--api', nargs='?',
                         help='start a flask webserver listening for API requests')
     parser.add_argument('-b', '--debug', action='store_true',
                         help='use the debug database')
     parser.add_argument('-c', '--clean', action='store_true',
                         help='clean old records in the database')
+    parser.add_argument('-s', '--silent', action='store_true',
+                        help='hide logs in the output')
     args = parser.parse_args()
     if not any(vars(args).values()):
       parser.error('No arguments provided.')

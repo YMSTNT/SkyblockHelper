@@ -7,6 +7,7 @@ class Utils:
   quitting = False
   paused = False
   debug = False
+  silent = False
 
   @staticmethod
   def epoch_to_human_time(epoch: int):
@@ -17,7 +18,8 @@ class Utils:
     if not epoch:
       epoch = time() * 1000
     text = f'[{Utils.epoch_to_human_time(epoch)}] {message}'
-    print(text)
+    if not Utils.silent:
+      print(text)
     if save:
       with open('data/logs/log.txt', 'a') as f:
         f.write(f'{text}\n')

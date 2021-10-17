@@ -32,22 +32,12 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "API (Debug)",
-      "type": "python",
-      "request": "launch",
-      "program": "main.py",
-      "args": [
-        "-ba"
-      ],
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Server (Debug)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
       "args": [
-        "-bdua"
+        "-bdu"
       ],
       "console": "integratedTerminal"
     },
@@ -92,22 +82,12 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "API (Release)",
-      "type": "python",
-      "request": "launch",
-      "program": "main.py",
-      "args": [
-        "-a"
-      ],
-      "console": "integratedTerminal"
-    },
-    {
       "name": "Server (Release)",
       "type": "python",
       "request": "launch",
       "program": "main.py",
       "args": [
-        "-dua"
+        "-du"
       ],
       "console": "integratedTerminal"
     },

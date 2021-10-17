@@ -6,6 +6,8 @@ from scipy import stats
 
 class DataUtils:
 
+  EPSILON = 0.001
+
   MINUTE = 1000 * 60
   HOUR = MINUTE * 60
   DAY = HOUR * 24
